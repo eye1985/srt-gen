@@ -1,7 +1,7 @@
 [project]
-name = "transcriber"
-version = "0.1.0"
-description = "Add your description here"
+name = "srt-gen"
+version = "0.5.0"
+description = "Transcribe media files and generate a subtitle"
 readme = "README.md"
 requires-python = ">=3.14"
 
