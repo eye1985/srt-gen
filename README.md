@@ -1,7 +1,12 @@
 # SRT generator
 
-In development:
-- No CUDA support yet
+Requirement Windows:
+- NVIDIA GPU
+- CUDA Toolkit 12.x (Windows)
+
+Requirement Mac:
+- ffmpeg
+
 
 Input any media file and generate a subtitle file. Transcription runs locally
 via `mlx-whisper` (`whisper-large-v3`), so it currently requires Apple silicon
