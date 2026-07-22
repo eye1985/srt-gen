@@ -1,5 +1,6 @@
 import argparse
 import sys
+import torch
 from pathlib import Path
 
 from .utils import is_apple, is_ffmpeg_available
@@ -38,8 +39,11 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         texts = whisper_transcribe(args.input, args.language)
-    else:
+    elif torch.cuda.is_available():
         texts = faster_whisper_transcribe(args.input, "en" if args.language is None else args.language)
+    else:
+        print("Your hardware is not supported. Only Apple silicon or NVIDIA GPU is supported", file=sys.stderr)
+        return 1
 
     write_to(f".{path}/{filename.split(".")[0]}.srt", texts, srt=True)
     print("Done!")

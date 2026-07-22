@@ -8,9 +8,12 @@ Requirement Mac:
 - ffmpeg
 
 
-Input any media file and generate a subtitle file. Transcription runs locally:
-on Apple silicon via `mlx-whisper` (`whisper-large-v3`), and everywhere else
-via `faster-whisper` (`large-v3` on CUDA). `ffmpeg` must be on PATH.
+Input any media file and generate a subtitle file. Transcription runs locally.
+**Only two platforms are supported: Apple silicon, and NVIDIA GPUs with CUDA.**
+Any other hardware (e.g. CPU-only, AMD, Intel GPUs) is not supported and the
+CLI will exit with an error. On Apple silicon transcription runs via
+`mlx-whisper` (`whisper-large-v3`); on NVIDIA/CUDA it runs via
+`faster-whisper` (`large-v3`). `ffmpeg` must be on PATH.
 
 ## Install
 
