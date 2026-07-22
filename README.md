@@ -1,6 +1,7 @@
 # SRT generator
 
-In development
+In development:
+- No CUDA support yet
 
 Input any media file and generate a subtitle file. Transcription runs locally
 via `mlx-whisper` (`whisper-large-v3`), so it currently requires Apple silicon
