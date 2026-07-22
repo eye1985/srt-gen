@@ -14,7 +14,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Transcribe media files and generate a subtitle",
     )
     parser.add_argument("--input", required=True, type=str, help="eg. ./videos/video01.mp4")
-    parser.add_argument("--language", type=str, help="eg. english")
+    parser.add_argument("--language", type=str, help="eg. en")
     return parser
 
 
