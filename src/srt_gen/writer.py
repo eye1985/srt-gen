@@ -1,5 +1,5 @@
-from whisper import WhisperResult
-from utils import to_hh_mm_ss_ms
+from .utils import to_hh_mm_ss_ms
+from .whisper import WhisperResult
 
 
 def write_to(path, data: list[WhisperResult], new_line: bool = True, overwrite: bool = True, srt: bool = False):

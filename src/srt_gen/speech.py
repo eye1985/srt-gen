@@ -1,12 +1,20 @@
-from mlx_audio.tts.utils import load_model
-import soundfile as sf
-import numpy as np
+from functools import cache
 
-model = load_model("mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit")
+import numpy as np
+import soundfile as sf
+from mlx_audio.tts.utils import load_model
+
+MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit"
 voice = "Vivian"
 
 
+@cache
+def get_model():
+    return load_model(MODEL)
+
+
 def generate_wav(texts: list[str], lang_code="english", output_path: str = "./bin/output.wav"):
+    model = get_model()
     chunks = []
     sr = None
 

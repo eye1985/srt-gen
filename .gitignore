@@ -15,3 +15,6 @@ CLAUDE.md
 
 # idea
 .idea/
+
+# macOS
+.DS_Store
