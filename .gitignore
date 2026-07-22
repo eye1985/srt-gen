@@ -12,3 +12,6 @@ wheels/
 # Claude
 CLAUDE.md
 /.claude/
+
+# idea
+.idea/
