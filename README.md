@@ -8,9 +8,9 @@ Requirement Mac:
 - ffmpeg
 
 
-Input any media file and generate a subtitle file. Transcription runs locally
-via `mlx-whisper` (`whisper-large-v3`), so it currently requires Apple silicon
-and `ffmpeg` on PATH.
+Input any media file and generate a subtitle file. Transcription runs locally:
+on Apple silicon via `mlx-whisper` (`whisper-large-v3`), and everywhere else
+via `faster-whisper` (`large-v3` on CUDA). `ffmpeg` must be on PATH.
 
 ## Install
 
@@ -22,23 +22,23 @@ uv tool install . # or install the CLI globally
 ## Usage
 
 ```sh
-srt-gen --input ./videos/video01.mp4 --language english
+srt-gen --input ./videos/video01.mp4 --language en
 ```
 
 | Flag | Required | Default | Description |
 | --- | --- | --- | --- |
 | `--input` | yes | — | Path to the media file, eg. `./videos/video01.mp4` |
-| `--language` | no | `english` | Spoken language of the media, see [Languages](#languages) |
+| `--language` | no | `en` | ISO 639-1 code of the spoken media, see [Languages](#languages) |
 
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
 
 ## Languages
 
-`--language` is passed straight to the Whisper tokenizer. It accepts either the
-**ISO 639-1 code** or the **English name** of the language, and matching is
-case-insensitive (`NO`, `no`, `Norwegian` and `norwegian` all work the same).
-Anything else fails with `Unsupported language: ...`.
+`--language` is passed straight to the Whisper backend and must be the exact
+**ISO 639-1 code** (`no`, not `Norwegian` or `NO`) — `faster-whisper` (used on
+CUDA) validates it against the code list only and rejects anything else,
+including language names and case variants.
 
 `whisper-large-v3` supports 100 languages:
 
@@ -99,32 +99,13 @@ Anything else fails with `Unsupported language: ...`.
 `yue` (cantonese) is exclusive to `large-v3`; older Whisper models only know the
 other 99.
 
-### Alternative names
-
-These extra spellings are accepted as aliases and resolve to the code shown:
-
-| Alias | Resolves to |
-| --- | --- |
-| `burmese` | `my` (myanmar) |
-| `castilian` | `es` (spanish) |
-| `flemish` | `nl` (dutch) |
-| `haitian` | `ht` (haitian creole) |
-| `letzeburgesch` | `lb` (luxembourgish) |
-| `mandarin` | `zh` (chinese) |
-| `moldavian` | `ro` (romanian) |
-| `moldovan` | `ro` (romanian) |
-| `panjabi` | `pa` (punjabi) |
-| `pushto` | `ps` (pashto) |
-| `sinhalese` | `si` (sinhala) |
-| `valencian` | `ca` (catalan) |
-
 ## Library
 
 ```python
 from srt_gen.whisper import whisper_transcribe
 from srt_gen.writer import write_to
 
-texts = whisper_transcribe("video01.mp4", "english")
+texts = whisper_transcribe("video01.mp4", "en")
 write_to("video01.srt", texts, srt=True)
 ```
 
