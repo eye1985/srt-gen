@@ -1,9 +1,11 @@
 import argparse
 import sys
+from pathlib import Path
 
 from .utils import is_apple, is_ffmpeg_available
 from .whisper import whisper_transcribe
 from .writer import write_to
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -11,10 +13,8 @@ def build_parser() -> argparse.ArgumentParser:
         description="Transcribe media files and generate a subtitle",
     )
     parser.add_argument("--input", required=True, type=str, help="eg. ./videos/video01.mp4")
-    parser.add_argument("--output", required=True, type=str, help="eg. ./results/video01.srt")
     parser.add_argument("--language", type=str, default="english", help="eg. english")
     return parser
-
 
 def main(argv: list[str] | None = None) -> int:
     # Returns a shell exit code: 0 = success, non-zero = failure. Without this,
@@ -29,8 +29,17 @@ def main(argv: list[str] | None = None) -> int:
         print("ffmpeg not found in PATH", file=sys.stderr)
         return 1
 
+    input_path_and_file = Path(args.input)
+
+    if not input_path_and_file.is_file():
+        print("Input file is not a file", file=sys.stderr)
+        return 1
+
+    filename = args.input.split("/")[-1]
+    path = "/".join(args.input.split("/")[:-1])
+
     texts = whisper_transcribe(args.input, args.language)
-    write_to(args.output, texts, srt=True)
+    write_to(f".{path}/{filename.split(".")[0]}.srt", texts, srt=True)
     print("Done!")
     return 0
 
