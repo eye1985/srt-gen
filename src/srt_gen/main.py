@@ -13,13 +13,13 @@ def build_parser() -> argparse.ArgumentParser:
         description="Transcribe media files and generate a subtitle",
     )
     parser.add_argument("--input", required=True, type=str, help="eg. ./videos/video01.mp4")
-    parser.add_argument("--language", type=str, default="english", help="eg. english")
+    parser.add_argument("--language", type=str, help="eg. english")
     return parser
 
 
+# Returns a shell exit code: 0 = success, non-zero = failure. Without this,
+# `srt-gen ... && next-step` would run next-step even when we bailed out early.
 def main(argv: list[str] | None = None) -> int:
-    # Returns a shell exit code: 0 = success, non-zero = failure. Without this,
-    # `srt-gen ... && next-step` would run next-step even when we bailed out early.
     args = build_parser().parse_args(argv)
 
     input_path_and_file = Path(args.input)
@@ -38,11 +38,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         texts = whisper_transcribe(args.input, args.language)
-        write_to(f".{path}/{filename.split(".")[0]}.srt", texts, srt=True)
     else:
-        texts = faster_whisper_transcribe(args.input)
-        write_to(f".{path}/{filename.split(".")[0]}.srt", texts, srt=True)
+        texts = faster_whisper_transcribe(args.input, "en" if args.language is None else args.language)
 
+    write_to(f".{path}/{filename.split(".")[0]}.srt", texts, srt=True)
     print("Done!")
     return 0
 
