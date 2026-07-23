@@ -1,5 +1,10 @@
 # SRT generator
 
+**Only two platforms are supported:** 
+ - **Apple silicon**
+ - **NVIDIA GPUs with CUDA.**
+
+
 Requirement Windows:
 - NVIDIA GPU
 - CUDA Toolkit 12.x (Windows)
@@ -7,12 +12,7 @@ Requirement Windows:
 Requirement Mac:
 - ffmpeg
 
-
 Input any media file and generate a subtitle file. Transcription runs locally.
-
-**Only two platforms are supported:** 
- - **Apple silicon**
- - **NVIDIA GPUs with CUDA.**
 
 Any other hardware (e.g. CPU-only, AMD, Intel GPUs) is not supported and the
 CLI will exit with an error. On Apple silicon transcription runs via
