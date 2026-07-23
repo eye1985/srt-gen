@@ -9,9 +9,9 @@ Only two platforms are supported:
 
 ## Install
 
-Requires **Python 3.14+** and **[uv](https://docs.astral.sh/uv/)**. `pip
-install .` is not supported — the CUDA-vs-Mac `torch` split lives in
-`[tool.uv.sources]`, which only uv reads.
+Requires **Python 3.14+**. The Apple-silicon and CUDA dependency sets are
+selected by standard environment markers, so any installer works — the examples
+below use **[uv](https://docs.astral.sh/uv/)**.
 
 ```sh
 uv python install 3.14   # if you do not have 3.14
@@ -139,6 +139,5 @@ src/srt_gen/
   languages.py supported language codes
   whisper.py   mlx-whisper + faster-whisper transcription
   writer.py    SRT / plain-text output
-  speech.py    TTS via mlx-audio (lazy model load)
   utils.py     platform + timestamp helpers
 ```
