@@ -21,10 +21,40 @@ CLI will exit with an error. On Apple silicon transcription runs via
 
 ## Install
 
+Before you start you need:
+
+- **Python 3.14.x** — enforced by `requires-python = ">=3.14"`, so anything
+  older fails at resolve time rather than at runtime.
+- **[uv](https://docs.astral.sh/uv/)** — already installed. The commands below
+  are the only supported install path; `pip install .` is not, because the
+  CUDA-vs-Mac wheel split for `torch` lives in `[tool.uv.sources]` and only uv
+  reads it.
+- **ffmpeg on PATH** (Mac) — the CLI checks for it and exits if it is missing.
+
+If you do not have 3.14 yet, uv can fetch it for you:
+
 ```sh
+uv python install 3.14
+```
+
+Then clone the repo and install from inside the project folder:
+
+```sh
+git clone https://github.com/eye1985/srt-gen.git
+cd srt-gen
+
 uv sync           # dev install into .venv
 uv tool install . # or install the CLI globally
 ```
+
+Both commands read `pyproject.toml` from the current directory, so they only
+work from the project root — `uv tool install .` in particular installs "the
+package in `.`", not a package named `srt-gen` from PyPI.
+
+`uv sync` creates `.venv` and pins the whole dependency set from `uv.lock`; run
+the CLI with `uv run srt-gen ...` or activate the venv. `uv tool install .` puts
+`srt-gen` on PATH in its own isolated environment instead, so you can call
+`srt-gen` from anywhere.
 
 ## Usage
 
