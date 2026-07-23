@@ -1,6 +1,6 @@
 import argparse
 import sys
-import torch
+import ctranslate2
 from pathlib import Path
 
 from .utils import is_apple
@@ -45,7 +45,9 @@ def main(argv: list[str] | None = None) -> int:
     if is_apple():
         print("Only Apple silicon is supported for now", file=sys.stderr)
         texts = whisper_transcribe(args.input, args.language, args.translate)
-    elif torch.cuda.is_available():
+    # CTranslate2 is what faster-whisper actually runs on, so ask it rather than
+    # torch: its CUDA runtime is separate, and the two can disagree.
+    elif ctranslate2.get_cuda_device_count() > 0:
         texts = faster_whisper_transcribe(args.input, args.language, args.translate)
     else:
         print(
