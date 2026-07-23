@@ -13,15 +13,22 @@ def get_model():
     return load_model(MODEL)
 
 
-def generate_wav(texts: list[str], lang_code="english", output_path: str = "./bin/output.wav"):
+def generate_wav(
+    texts: list[str], lang_code="english", output_path: str = "./bin/output.wav"
+):
     model = get_model()
     chunks = []
     sr = None
 
     temp_ref_audio = None
     for index, text in enumerate(texts):
-        for result in model.generate(text, voice=voice, lang_code=lang_code, ref_audio=temp_ref_audio,
-                                     ref_text=None if index == 0 else texts[0]):
+        for result in model.generate(
+            text,
+            voice=voice,
+            lang_code=lang_code,
+            ref_audio=temp_ref_audio,
+            ref_text=None if index == 0 else texts[0],
+        ):
             if index == 0:
                 temp_ref_audio = result.audio
 

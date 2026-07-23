@@ -32,3 +32,8 @@ explicit = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/srt_gen"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.22",
+]
