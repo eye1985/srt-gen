@@ -9,11 +9,15 @@ Requirement Mac:
 
 
 Input any media file and generate a subtitle file. Transcription runs locally.
-**Only two platforms are supported: Apple silicon, and NVIDIA GPUs with CUDA.**
+
+**Only two platforms are supported:** 
+ - **Apple silicon**
+ - **NVIDIA GPUs with CUDA.**
+
 Any other hardware (e.g. CPU-only, AMD, Intel GPUs) is not supported and the
 CLI will exit with an error. On Apple silicon transcription runs via
 `mlx-whisper` (`whisper-large-v3`); on NVIDIA/CUDA it runs via
-`faster-whisper` (`large-v3`). `ffmpeg` must be on PATH.
+`faster-whisper` (`large-v3`).
 
 ## Install
 
@@ -31,10 +35,16 @@ srt-gen --input ./videos/video01.mp4 --language en
 | Flag | Required | Default | Description |
 | --- | --- | --- | --- |
 | `--input` | yes | — | Path to the media file, eg. `./videos/video01.mp4` |
-| `--language` | no | `en` | ISO 639-1 code of the spoken media, see [Languages](#languages) |
+| `--language` | no | auto-detect | ISO 639-1 code of the spoken media, see [Languages](#languages) |
+| `--translate` | no | off | Output English subtitles instead of the spoken language, see [Translation](#translation) |
 
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
+
+Omitting `--language` lets Whisper detect the spoken language from the first 30
+seconds of audio. That is usually right, but a file that opens with music,
+silence or a different language than the body can be misdetected — pass
+`--language` explicitly when you already know it.
 
 ## Languages
 
@@ -102,6 +112,35 @@ including language names and case variants.
 `yue` (cantonese) is exclusive to `large-v3`; older Whisper models only know the
 other 99.
 
+## Translation
+
+```sh
+srt-gen --input ./videos/norsk.mp4 --language no --translate
+```
+
+`--translate` switches the backend from Whisper's `transcribe` task to its
+`translate` task (`task="translate"` on both `mlx-whisper` and
+`faster-whisper`). `--language` still describes the **spoken** audio; it is the
+source, not the target.
+
+Some caveats worth knowing before relying on it:
+
+- **English is the only target.** This is a single mode the model was trained
+  with, not a general translator — there is no option for any other output
+  language. Norwegian → English works; Norwegian → German does not.
+- **Quality is well below a dedicated translator.** Translation is a side
+  capability of a speech recognition model, so expect literal phrasing, dropped
+  nuance and occasional mistranslated idioms or names. For anything that has to
+  be accurate, transcribe in the source language and run the `.srt` through a
+  real translation step.
+- **Timings get looser.** `mlx-whisper` warns that word-level timestamps are
+  unreliable on translations, since translated text no longer lines up
+  one-to-one with the audio it came from. Subtitle timings are taken per
+  segment, which holds up better, but drift is still more likely than on a
+  plain transcription.
+
+Without the flag the subtitles stay in the spoken language.
+
 ## Library
 
 ```python
@@ -112,12 +151,17 @@ texts = whisper_transcribe("video01.mp4", "en")
 write_to("video01.srt", texts, srt=True)
 ```
 
+Both `whisper_transcribe` (Apple silicon) and `faster_whisper_transcribe`
+(CUDA) take the same `(file_path, language, translate=False)` arguments. Pass
+`language=None` to auto-detect, `translate=True` to get English out.
+
 ## Layout
 
 ```
 src/srt_gen/
   main.py      argparse entry point (srt-gen)
-  whisper.py   mlx-whisper transcription
+  languages.py supported language codes
+  whisper.py   mlx-whisper + faster-whisper transcription
   writer.py    SRT / plain-text output
   speech.py    TTS via mlx-audio (lazy model load)
   utils.py     platform + timestamp helpers
