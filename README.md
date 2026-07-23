@@ -9,21 +9,24 @@ Only two platforms are supported:
 
 ## Install
 
-Requires **Python 3.14+**. The Apple-silicon and CUDA dependency sets are
+Requires **Python 3.11+**. The Apple-silicon and CUDA dependency sets are
 selected by standard environment markers, so any installer works — the examples
-below use **[uv](https://docs.astral.sh/uv/)**.
+below use **[uv](https://docs.astral.sh/uv/)**, which fetches a suitable Python
+for you if you do not have one.
 
 ```sh
-uv python install 3.14   # if you do not have 3.14
+uv tool install git+https://github.com/eye1985/srt-gen
+srt-gen --input ./videos/video01.mp4 --language en
+```
 
+No clone or manual Python install needed. To work on the project instead:
+
+```sh
 git clone https://github.com/eye1985/srt-gen.git
 cd srt-gen
 
-uv sync           # dev install into .venv, run with `uv run srt-gen ...`
-uv tool install . # or install `srt-gen` globally on PATH
+uv sync   # creates .venv, run with `uv run srt-gen ...`
 ```
-
-Both commands must run from the project root.
 
 ## Usage
 
