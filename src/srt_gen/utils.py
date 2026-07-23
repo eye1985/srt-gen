@@ -1,5 +1,4 @@
 import platform
-import shutil
 
 
 def is_apple():
@@ -8,11 +7,6 @@ def is_apple():
     if system == "Darwin" and machine == "arm64":
         return True
     return False
-
-
-def is_ffmpeg_available():
-    ffmpeg = shutil.which("ffmpeg")
-    return ffmpeg is not None
 
 
 def to_hh_mm_ss_ms(seconds: float):

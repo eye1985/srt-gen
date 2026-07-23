@@ -3,7 +3,7 @@ import sys
 import torch
 from pathlib import Path
 
-from .utils import is_apple, is_ffmpeg_available
+from .utils import is_apple
 from .whisper import whisper_transcribe, faster_whisper_transcribe
 from .writer import write_to
 from .languages import SUPPORTED_LANGUAGES
@@ -44,10 +44,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if is_apple():
         print("Only Apple silicon is supported for now", file=sys.stderr)
-        if not is_ffmpeg_available():
-            print("ffmpeg not found in PATH", file=sys.stderr)
-            return 1
-
         texts = whisper_transcribe(args.input, args.language, args.translate)
     elif torch.cuda.is_available():
         texts = faster_whisper_transcribe(args.input, args.language, args.translate)

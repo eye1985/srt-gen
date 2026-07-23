@@ -1,5 +1,6 @@
 import time
 from faster_whisper import WhisperModel
+from faster_whisper.audio import decode_audio
 from typing import TypedDict
 from .utils import to_hh_mm_ss_ms
 
@@ -26,8 +27,14 @@ def whisper_transcribe(
     start_time = time.perf_counter()
 
     task = "translate" if translate else "transcribe"
+
+    # mlx_whisper.transcribe() would otherwise shell out to an `ffmpeg` binary to
+    # decode. PyAV (a faster-whisper dependency) has ffmpeg linked into its wheel,
+    # so decoding here keeps the CLI free of any external install.
+    audio = decode_audio(file_path, sampling_rate=16000)
+
     output = mlx_whisper.transcribe(
-        file_path,
+        audio,
         path_or_hf_repo=model,
         word_timestamps=True,
         language=language,

@@ -1,60 +1,29 @@
 # SRT generator
 
-**Only two platforms are supported:** 
- - **Apple silicon**
- - **NVIDIA GPUs with CUDA.**
-
-
-Requirement Windows:
-- NVIDIA GPU
-- CUDA Toolkit 12.x (Windows)
-
-Requirement Mac:
-- ffmpeg
-
 Input any media file and generate a subtitle file. Transcription runs locally.
 
-Any other hardware (e.g. CPU-only, AMD, Intel GPUs) is not supported and the
-CLI will exit with an error. On Apple silicon transcription runs via
-`mlx-whisper` (`whisper-large-v3`); on NVIDIA/CUDA it runs via
-`faster-whisper` (`large-v3`).
+Only two platforms are supported:
+
+- **Apple silicon** (M1 or newer) — runs `mlx-whisper` (`whisper-large-v3`)
+- **NVIDIA GPU + CUDA Toolkit 12.x** — runs `faster-whisper` (`large-v3`)
 
 ## Install
 
-Before you start you need:
-
-- **Python 3.14.x** — enforced by `requires-python = ">=3.14"`, so anything
-  older fails at resolve time rather than at runtime.
-- **[uv](https://docs.astral.sh/uv/)** — already installed. The commands below
-  are the only supported install path; `pip install .` is not, because the
-  CUDA-vs-Mac wheel split for `torch` lives in `[tool.uv.sources]` and only uv
-  reads it.
-- **ffmpeg on PATH** (Mac) — the CLI checks for it and exits if it is missing.
-
-If you do not have 3.14 yet, uv can fetch it for you:
+Requires **Python 3.14+** and **[uv](https://docs.astral.sh/uv/)**. `pip
+install .` is not supported — the CUDA-vs-Mac `torch` split lives in
+`[tool.uv.sources]`, which only uv reads.
 
 ```sh
-uv python install 3.14
-```
+uv python install 3.14   # if you do not have 3.14
 
-Then clone the repo and install from inside the project folder:
-
-```sh
 git clone https://github.com/eye1985/srt-gen.git
 cd srt-gen
 
-uv sync           # dev install into .venv
-uv tool install . # or install the CLI globally
+uv sync           # dev install into .venv, run with `uv run srt-gen ...`
+uv tool install . # or install `srt-gen` globally on PATH
 ```
 
-Both commands read `pyproject.toml` from the current directory, so they only
-work from the project root — `uv tool install .` in particular installs "the
-package in `.`", not a package named `srt-gen` from PyPI.
-
-`uv sync` creates `.venv` and pins the whole dependency set from `uv.lock`; run
-the CLI with `uv run srt-gen ...` or activate the venv. `uv tool install .` puts
-`srt-gen` on PATH in its own isolated environment instead, so you can call
-`srt-gen` from anywhere.
+Both commands must run from the project root.
 
 ## Usage
 
@@ -71,19 +40,13 @@ srt-gen --input ./videos/video01.mp4 --language en
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
 
-Omitting `--language` lets Whisper detect the spoken language from the first 30
-seconds of audio. That is usually right, but a file that opens with music,
-silence or a different language than the body can be misdetected — pass
-`--language` explicitly when you already know it.
+Omitting `--language` detects the language from the first 30 seconds, which can
+misfire on files that open with music, silence or another language.
 
 ## Languages
 
-`--language` is passed straight to the Whisper backend and must be the exact
-**ISO 639-1 code** (`no`, not `Norwegian` or `NO`) — `faster-whisper` (used on
-CUDA) validates it against the code list only and rejects anything else,
-including language names and case variants.
-
-`whisper-large-v3` supports 100 languages:
+`--language` must be the exact **ISO 639-1 code** (`no`, not `Norwegian` or
+`NO`). `whisper-large-v3` supports 100 languages:
 
 | Code | Name | Code | Name |
 | --- | --- | --- | --- |
@@ -139,37 +102,20 @@ including language names and case variants.
 | `lo` | lao | | |
 | `lt` | lithuanian | | |
 
-`yue` (cantonese) is exclusive to `large-v3`; older Whisper models only know the
-other 99.
-
 ## Translation
 
 ```sh
 srt-gen --input ./videos/norsk.mp4 --language no --translate
 ```
 
-`--translate` switches the backend from Whisper's `transcribe` task to its
-`translate` task (`task="translate"` on both `mlx-whisper` and
-`faster-whisper`). `--language` still describes the **spoken** audio; it is the
-source, not the target.
+`--language` still describes the **spoken** audio; it is the source, not the
+target.
 
-Some caveats worth knowing before relying on it:
-
-- **English is the only target.** This is a single mode the model was trained
-  with, not a general translator — there is no option for any other output
-  language. Norwegian → English works; Norwegian → German does not.
-- **Quality is well below a dedicated translator.** Translation is a side
-  capability of a speech recognition model, so expect literal phrasing, dropped
-  nuance and occasional mistranslated idioms or names. For anything that has to
-  be accurate, transcribe in the source language and run the `.srt` through a
-  real translation step.
-- **Timings get looser.** `mlx-whisper` warns that word-level timestamps are
-  unreliable on translations, since translated text no longer lines up
-  one-to-one with the audio it came from. Subtitle timings are taken per
-  segment, which holds up better, but drift is still more likely than on a
-  plain transcription.
-
-Without the flag the subtitles stay in the spoken language.
+- **English is the only target.** Norwegian → English works; Norwegian →
+  German does not.
+- **Quality is below a dedicated translator.** Expect literal phrasing and
+  occasional mistranslated idioms or names.
+- **Timings get looser** than on a plain transcription.
 
 ## Library
 
@@ -182,8 +128,8 @@ write_to("video01.srt", texts, srt=True)
 ```
 
 Both `whisper_transcribe` (Apple silicon) and `faster_whisper_transcribe`
-(CUDA) take the same `(file_path, language, translate=False)` arguments. Pass
-`language=None` to auto-detect, `translate=True` to get English out.
+(CUDA) take `(file_path, language, translate=False)`. Pass `language=None` to
+auto-detect, `translate=True` to get English out.
 
 ## Layout
 
