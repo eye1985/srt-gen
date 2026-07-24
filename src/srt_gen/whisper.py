@@ -104,6 +104,9 @@ def whisper_transcribe(
         word_timestamps=True,
         language=language,
         task=task,
+        temperature=0.0,  # greedy; mlx has no beam search, so 0 is best quality
+        condition_on_previous_text=False,
+        verbose=True,  # print each segment as it's decoded (True) / progress bar (False)
     )
 
     segments = output["segments"]
