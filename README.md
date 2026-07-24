@@ -9,8 +9,9 @@ Only two platforms are supported:
 
 No external toolchain is required on either. The CUDA runtime (cuBLAS + cuDNN)
 ships as pip wheels, so on Windows you only need a current **NVIDIA driver** —
-**not** the CUDA Toolkit. **Linux is not supported**; the CLI exits with an error
-there.
+**not** the CUDA Toolkit. 
+
+**Linux is not supported**; the CLI exits.
 
 ## Install
 
