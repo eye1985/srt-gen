@@ -2,7 +2,7 @@ import time
 from faster_whisper import WhisperModel
 from faster_whisper.audio import decode_audio
 from typing import TypedDict
-from .utils import to_hh_mm_ss_ms
+from .utils import add_cuda_dll_dirs, to_hh_mm_ss_ms
 
 WhisperResult = TypedDict(
     "WhisperResult",
@@ -60,6 +60,9 @@ def faster_whisper_transcribe(
     file_path: str, language, translate: bool = False
 ) -> list[WhisperResult]:
     task = "translate" if translate else "transcribe"
+    # Make the bundled cuBLAS/cuDNN wheels loadable before CTranslate2 reaches
+    # for them, so no CUDA Toolkit install is required.
+    add_cuda_dll_dirs()
     model = WhisperModel("large-v3", device="cuda", compute_type="float16")
 
     segments, info = model.transcribe(

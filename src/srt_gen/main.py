@@ -3,7 +3,7 @@ import sys
 import ctranslate2
 from pathlib import Path
 
-from .utils import is_apple
+from .utils import is_apple, is_linux
 from .whisper import whisper_transcribe, faster_whisper_transcribe
 from .writer import write_to
 from .languages import SUPPORTED_LANGUAGES
@@ -40,6 +40,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.language is not None and args.language not in SUPPORTED_LANGUAGES:
         print("Please input a supported language code", file=sys.stderr)
+        return 1
+
+    if is_linux():
+        # The CUDA path ships cuBLAS/cuDNN as Windows-only wheels, so Linux would
+        # still need a manual CUDA setup. Reject it rather than half-support it.
+        print("Linux is not supported", file=sys.stderr)
         return 1
 
     if is_apple():

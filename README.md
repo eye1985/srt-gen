@@ -5,18 +5,29 @@ Input any media file and generate a subtitle file. Transcription runs locally.
 Only two platforms are supported:
 
 - **Apple silicon** (M1 or newer) — runs `mlx-whisper` (`whisper-large-v3`)
-- **NVIDIA GPU + CUDA Toolkit 12.x** — runs `faster-whisper` (`large-v3`)
+- **Windows + NVIDIA GPU** — runs `faster-whisper` (`large-v3`)
+
+No external toolchain is required on either. The CUDA runtime (cuBLAS + cuDNN)
+ships as pip wheels, so on Windows you only need a current **NVIDIA driver** —
+**not** the CUDA Toolkit. **Linux is not supported**; the CLI exits with an error
+there.
 
 ## Install
 
-Requires **Python 3.11+**. The Apple-silicon and CUDA dependency sets are
-selected by standard environment markers, so any installer works — the examples
-below use **[uv](https://docs.astral.sh/uv/)**, which fetches a suitable Python
-for you if you do not have one.
+Requires **Python 3.11+**. The Apple-silicon and Windows/CUDA dependency sets
+are selected by standard environment markers, so any installer works — the
+examples below use **[uv](https://docs.astral.sh/uv/)**, which fetches a suitable
+Python for you if you do not have one.
 
 ```sh
 uv tool install git+https://github.com/eye1985/srt-gen
 srt-gen --input ./videos/video01.mp4 --language en
+```
+
+To uninstall:
+
+```sh
+uv tool uninstall srt-gen
 ```
 
 No clone or manual Python install needed. To work on the project instead:
@@ -131,8 +142,8 @@ write_to("video01.srt", texts, srt=True)
 ```
 
 Both `whisper_transcribe` (Apple silicon) and `faster_whisper_transcribe`
-(CUDA) take `(file_path, language, translate=False)`. Pass `language=None` to
-auto-detect, `translate=True` to get English out.
+(Windows + NVIDIA) take `(file_path, language, translate=False)`. Pass
+`language=None` to auto-detect, `translate=True` to get English out.
 
 ## Layout
 

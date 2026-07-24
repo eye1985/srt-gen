@@ -10,6 +10,13 @@ dependencies = [
     # MLX is Apple-silicon only and has no wheels elsewhere, so gate it or the
     # install breaks on Windows/Linux. faster-whisper covers those via CUDA.
     "mlx-whisper>=0.4.3 ; sys_platform == 'darwin' and platform_machine == 'arm64'",
+    # CTranslate2 (inside faster-whisper) loads cuBLAS + cuDNN 9 at transcribe
+    # time. Shipping them as wheels means users don't need the CUDA Toolkit
+    # installed — just an NVIDIA driver. cuDNN is pinned to 9.x to match
+    # CTranslate2 4.x's ABI. Windows-only: it's the sole CUDA platform we
+    # support (Linux is rejected in main); no-op on Apple silicon.
+    "nvidia-cublas-cu12 ; platform_system == 'Windows' and platform_machine == 'AMD64'",
+    "nvidia-cudnn-cu12>=9,<10 ; platform_system == 'Windows' and platform_machine == 'AMD64'",
 ]
 
 [project.scripts]
