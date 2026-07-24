@@ -13,13 +13,78 @@ WhisperResult = TypedDict(
     },
 )
 
+mlx_default_model = "mlx-community/whisper-large-v3-mlx"
+
+# Canonical fp16 MLX conversions hosted by the mlx-community org, one per
+# official Whisper size. Values are the HF repo ids passed as `path_or_hf_repo`.
+# (Quantized -4bit/-8bit/-fp32 variants and language-specific fine-tunes are
+# omitted; add them here if needed.)
+mlx_models = frozenset(
+    [
+        "mlx-community/whisper-tiny-mlx",
+        "mlx-community/whisper-tiny.en-mlx",
+        "mlx-community/whisper-base-mlx",
+        "mlx-community/whisper-base.en-mlx",
+        "mlx-community/whisper-small-mlx",
+        "mlx-community/whisper-small.en-mlx",
+        "mlx-community/whisper-medium-mlx",
+        "mlx-community/whisper-medium.en-mlx",
+        "mlx-community/whisper-large-mlx",
+        "mlx-community/whisper-large-v1-mlx",
+        "mlx-community/whisper-large-v2-mlx",
+        mlx_default_model,
+        "mlx-community/whisper-large-v3-turbo",
+        "mlx-community/distil-whisper-large-v3",
+        "mlx-community/distil-whisper-medium.en",
+    ]
+)
+
+fw_default_model = "large-v3"
+# Model names accepted by faster-whisper (faster_whisper.utils._MODELS). These
+# are downloaded from the Systran HF repos on first use.
+fw_models = frozenset(
+    [
+        "tiny",
+        "tiny.en",
+        "base",
+        "base.en",
+        "small",
+        "small.en",
+        "medium",
+        "medium.en",
+        "large",
+        "large-v1",
+        "large-v2",
+        fw_default_model,
+        "large-v3-turbo",
+        "turbo",
+        "distil-small.en",
+        "distil-medium.en",
+        "distil-large-v2",
+        "distil-large-v3",
+        "distil-large-v3.5",
+    ]
+)
+
+
+class NotSupportedModelException(Exception):
+    pass
+
+
+NOT_SUPPORTED_MODEL_MESSAGE = "Please pick a model from the supported list."
+
 
 def whisper_transcribe(
-    file_path: str, language, translate: bool = False
+    file_path: str,
+    language,
+    model: str,
+    translate: bool = False,
 ) -> list[WhisperResult]:
-    import mlx_whisper  # only importable/usable on Apple Silicon (Metal-based)
+    model = model or mlx_default_model
+    if model not in mlx_models:
+        raise NotSupportedModelException(NOT_SUPPORTED_MODEL_MESSAGE)
 
-    model = "mlx-community/whisper-large-v3-mlx"
+    import mlx_whisper  # only importable/usable on Apple Silicon (Metal-based)
 
     if language is None:
         print("Language not specified, will use auto detection")
@@ -57,13 +122,18 @@ def whisper_transcribe(
 
 
 def faster_whisper_transcribe(
-    file_path: str, language, translate: bool = False
+    file_path: str, language, model: str, translate: bool = False
 ) -> list[WhisperResult]:
+
+    model = model or fw_default_model
+    if model not in fw_models:
+        raise NotSupportedModelException(NOT_SUPPORTED_MODEL_MESSAGE)
+
     task = "translate" if translate else "transcribe"
     # Make the bundled cuBLAS/cuDNN wheels loadable before CTranslate2 reaches
     # for them, so no CUDA Toolkit install is required.
     add_cuda_dll_dirs()
-    model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+    model = WhisperModel(model, device="cuda", compute_type="float16")
 
     segments, info = model.transcribe(
         file_path,
