@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QFileDialog,
     QLabel,
+    QMessageBox,
     QProgressBar,
 )
 
@@ -79,27 +80,36 @@ class MainWindow(QMainWindow):
 
         print("Transcribing ...")
 
+        self.run_button.setEnabled(False)
+        self.button.setEnabled(False)
+        self.progress_bar.setValue(0)
+
         self.thread = QThread()
-        self.worker = TranscribeWorker()
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(
-            lambda: self.worker.run_task(
-                input_path=self.path,
-                language=self.options.language_code,
-                model=self.options.model,
-                translate=self.options.translate,
-            )
+        self.worker = TranscribeWorker(
+            input_path=self.path,
+            language=self.options.language_code,
+            model=self.options.model,
+            translate=self.options.translate,
         )
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run_task)
+
         self.worker.progress.connect(self.progress_bar.setValue)
+        self.worker.failed.connect(self.on_transcribe_failed)
+        self.worker.finished.connect(self.on_transcribe_finished)
+        self.worker.finished.connect(self.thread.quit)
+
         self.thread.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
 
-        self.worker.finished.connect(self.thread.quit)
-
-
-
-
         self.thread.start()
+
+    def on_transcribe_failed(self, message: str):
+        QMessageBox.critical(self, "Transcribe failed", message)
+
+    def on_transcribe_finished(self):
+        self.run_button.setEnabled(True)
+        self.button.setEnabled(True)
 
 
 def start_ui():
