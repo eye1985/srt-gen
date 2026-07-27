@@ -130,6 +130,12 @@ class MainWindow(QMainWindow):
         self.log_view.clear()
 
         self.thread = QThread()
+        # MLX walks its computation graph with a recursive DFS, which needs far more
+        # stack than the 544K a QThread gets by default: without this the decode dies
+        # with SIGBUS on the thread's guard page before the first segment is out. The
+        # CLI path never hits it because the main thread already has 8MB. This only
+        # reserves address space, so the unused part costs nothing.
+        self.thread.setStackSize(32 * 1024 * 1024)
         self.worker = TranscribeWorker(
             input_path=self.path,
             auto_detect_lang=self.options.auto_detect_lang,

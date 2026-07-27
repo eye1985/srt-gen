@@ -48,6 +48,9 @@ uv sync   # creates .venv, run with `uv run srt-gen ...`
 srt-gen --input ./videos/video01.mp4 --language en
 ```
 
+If you would rather not use a command line, `srt-gen --ui` opens the same thing
+as a desktop window — see [UI mode](#ui-mode) below.
+
 | Flag | Required | Default | Description |
 | --- | --- | --- | --- |
 | `--input` | yes | — | Path to the media file, eg. `./videos/video01.mp4` |
@@ -56,13 +59,32 @@ srt-gen --input ./videos/video01.mp4 --language en
 | `--translate` | no | off | Output English subtitles instead of the spoken language, see [Translation](#translation) |
 | `--temperature` | no | `0.8` | Decoding temperature; `0.0` is greedy, see [Decoding](#decoding) |
 | `--condition-on-previous-text` | no | off | Feed each segment the previous one as context, see [Decoding](#decoding) |
-| `--ui` | no | off | Open the desktop window instead of transcribing, see [UI](#ui) |
+| `--ui` | no | off | Open the desktop window instead of transcribing, see [UI mode](#ui-mode) |
 
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
 
 Omitting `--language` detects the language from the first 30 seconds, which can
 misfire on files that open with music, silence or another language.
+
+### UI mode
+
+```sh
+srt-gen --ui
+```
+
+For anyone who prefers a window to a command line. Pick a file, set the same
+options as above, and watch the log and progress bar as it decodes. The `.srt`
+is written next to the input exactly as on the command line.
+
+`--ui` is checked before anything else, so it ignores every other flag —
+`srt-gen --ui --input x.mp4` opens the window with no file selected. Set the
+options in the window instead.
+
+The window exposes model, auto-detect language, language, temperature, condition
+on previous text, and translate. **It runs on Apple silicon only** — on
+Windows + NVIDIA the window opens, but starting a transcription fails. Use the
+command line there.
 
 ## Decoding
 
@@ -78,25 +100,6 @@ terminology consistent across segment boundaries. The tradeoff is that a single
 bad segment can poison everything after it — the model repeats or loops on its
 own mistake. It is off by default for that reason; turn it on for clean,
 continuous audio.
-
-## UI
-
-```sh
-srt-gen --ui
-```
-
-Opens a desktop window: pick a file, set the options, watch the log and progress
-bar as it decodes. The `.srt` is written next to the input exactly as it is on
-the command line.
-
-`--ui` is checked before anything else, so it ignores every other flag —
-`srt-gen --ui --input x.mp4` opens the window with no file selected. Set the
-options in the window instead.
-
-The window exposes model, auto-detect language, language, temperature, condition
-on previous text, and translate. **It runs on Apple silicon only** — on
-Windows + NVIDIA the window opens, but starting a transcription fails. Use the
-command line there.
 
 ## Models
 
