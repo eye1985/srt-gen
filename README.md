@@ -54,12 +54,49 @@ srt-gen --input ./videos/video01.mp4 --language en
 | `--model` | no | `large-v3` | Model to transcribe with, see [Models](#models) |
 | `--language` | no | auto-detect | ISO 639-1 code of the spoken media, see [Languages](#languages) |
 | `--translate` | no | off | Output English subtitles instead of the spoken language, see [Translation](#translation) |
+| `--temperature` | no | `0.8` | Decoding temperature; `0.0` is greedy, see [Decoding](#decoding) |
+| `--condition-on-previous-text` | no | off | Feed each segment the previous one as context, see [Decoding](#decoding) |
+| `--ui` | no | off | Open the desktop window instead of transcribing, see [UI](#ui) |
 
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
 
 Omitting `--language` detects the language from the first 30 seconds, which can
 misfire on files that open with music, silence or another language.
+
+## Decoding
+
+`--temperature` controls how much the decoder is allowed to wander. `0.0` is
+greedy — it always takes the most likely token, which is the steadiest choice
+and the best one on Apple silicon, where there is no beam search to fall back
+on. Higher values let it consider less likely tokens, which sometimes recovers
+from a bad patch of audio and sometimes invents text that was never spoken.
+
+`--condition-on-previous-text` feeds each segment the previous segment as
+context. It reads better on continuous speech, because the model keeps names and
+terminology consistent across segment boundaries. The tradeoff is that a single
+bad segment can poison everything after it — the model repeats or loops on its
+own mistake. It is off by default for that reason; turn it on for clean,
+continuous audio.
+
+## UI
+
+```sh
+srt-gen --ui
+```
+
+Opens a desktop window: pick a file, set the options, watch the log and progress
+bar as it decodes. The `.srt` is written next to the input exactly as it is on
+the command line.
+
+`--ui` is checked before anything else, so it ignores every other flag —
+`srt-gen --ui --input x.mp4` opens the window with no file selected. Set the
+options in the window instead.
+
+The window exposes model, auto-detect language, language, temperature, condition
+on previous text, and translate. **It runs on Apple silicon only** — on
+Windows + NVIDIA the window opens, but starting a transcription fails. Use the
+command line there.
 
 ## Models
 
@@ -179,18 +216,38 @@ write_to("video01.srt", texts, srt=True)
 ```
 
 Both `whisper_transcribe` (Apple silicon) and `faster_whisper_transcribe`
-(Windows + NVIDIA) take `(file_path, language, model, translate=False)`. Pass
-`language=None` to auto-detect, an empty `model` (`""`) to use the platform
+(Windows + NVIDIA) take:
+
+```python
+(file_path, language, model, translate=False, temperature=..., 
+ condition_on_previous_text=False, on_progress=None)
+```
+
+Pass `language=None` to auto-detect, an empty `model` (`""`) to use the platform
 default, and `translate=True` to get English out. An unsupported `model` raises
 `NotSupportedModelException`.
+
+`temperature` defaults to `0.0` on `whisper_transcribe` (greedy — mlx has no
+beam search) and `0.8` on `faster_whisper_transcribe`. Note that the `srt-gen`
+command passes `0.8` to both, so calling the library directly on Apple silicon
+without an explicit `temperature` decodes differently than the CLI does.
+
+`on_progress` is called with the fraction decoded so far, `0.0` → `1.0`.
 
 ## Layout
 
 ```
 src/srt_gen/
-  main.py      argparse entry point (srt-gen)
+  main.py      entry point (srt-gen): picks backend, writes output
+  cli.py       argparse flag definitions
   languages.py supported language codes
+  models.py    per-platform model lists and defaults
   whisper.py   mlx-whisper + faster-whisper transcription
   writer.py    SRT / plain-text output
   utils.py     platform + timestamp helpers
+  ui/
+    app.py                 main window (--ui)
+    transcribe_options.py  the options form
+    transcribe_worker.py   runs the transcription off the GUI thread
+    log_stream.py          pipes backend stdout into the log panel
 ```
