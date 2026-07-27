@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 
 
 from srt_gen.languages import SUPPORTED_LANGUAGES
+from srt_gen.models import default_model_for_platform, models_for_platform
 
 
 class TranscribeOptions:
@@ -18,6 +19,16 @@ class TranscribeOptions:
         self.__temperature = 0.8
         self.__condition_on_previous_text = False
         self.__translate = False
+        self.__model = default_model_for_platform()
+
+        # Only the models the platform's backend can actually load are offered,
+        # so the selection can never trip NotSupportedModelException.
+        self.model_combo_box = QComboBox()
+        self.model_combo_box.addItems(models_for_platform())
+        self.model_combo_box.setCurrentIndex(
+            self.model_combo_box.findText(self.__model)
+        )
+        self.model_combo_box.currentTextChanged.connect(self.select_model)
 
         self.beam_size_box = QSpinBox()
         self.beam_size_box.setRange(1, 10)
@@ -50,11 +61,15 @@ class TranscribeOptions:
 
         self.__form_layout = QFormLayout()
         self.__form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.__form_layout.addRow("Model:", self.model_combo_box)
         self.__form_layout.addRow("Beam Size:", self.beam_size_box)
         self.__form_layout.addRow("Language:", self.language_combo_box)
         self.__form_layout.addRow("Temperature:", self.temp_box)
         self.__form_layout.addRow("Condition on previous text:", self.condition_box)
         self.__form_layout.addRow("Translate to English:", self.translate_box)
+
+    def select_model(self, text):
+        self.__model = text
 
     def select_beam_size(self, value):
         self.__beam_size = value
@@ -74,6 +89,10 @@ class TranscribeOptions:
     @property
     def form_layout(self):
         return self.__form_layout
+
+    @property
+    def model(self):
+        return self.__model
 
     @property
     def beam_size(self):

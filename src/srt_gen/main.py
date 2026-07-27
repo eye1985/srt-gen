@@ -6,10 +6,9 @@ from .utils import is_apple, is_linux
 from .whisper import (
     whisper_transcribe,
     faster_whisper_transcribe,
-    mlx_models,
-    fw_models,
     NotSupportedModelException,
 )
+from .models import mlx_models, fw_models
 from .writer import write_to
 from .languages import SUPPORTED_LANGUAGES
 from .cli import build_parser
@@ -17,9 +16,35 @@ from .cli import build_parser
 from .ui.app import start_ui
 
 
+def build_progress_printer():
+    """Report decode progress on stderr, one line per percent gained.
+
+    Deliberately not a \\r-redrawn bar: both backends print segment text to stdout as
+    they decode, which would scroll a single-line bar away every few seconds. Separate
+    lines survive that interleaving, and keeping progress on stderr means `srt-gen ...
+    > out.txt` still shows it.
+    """
+    last_percent = -1
+
+    def report(fraction: float) -> None:
+        nonlocal last_percent
+        percent = int(fraction * 100)
+        if percent != last_percent:
+            last_percent = percent
+            print(f"[{percent:3d}%]", file=sys.stderr, flush=True)
+
+    return report
+
+
 # Returns a shell exit code: 0 = success, non-zero = failure. Without this,
 # `srt-gen ... && next-step` would run next-step even when we bailed out early.
 def main(argv: list[str] | None = None) -> int:
+    if is_linux():
+        # The CUDA path ships cuBLAS/cuDNN as Windows-only wheels, so Linux would
+        # still need a manual CUDA setup. Reject it rather than half-support it.
+        print("Linux is not supported", file=sys.stderr)
+        return 1
+
     args = build_parser().parse_args(argv)
     if args.ui:
         start_ui()
@@ -35,19 +60,16 @@ def main(argv: list[str] | None = None) -> int:
             print("Input file is not a file", file=sys.stderr)
             return 1
 
-        filename = args.input.split("/")[-1]
-        path = "/".join(args.input.split("/")[:-1])
+        # Written next to the input, same name with an .srt suffix, whether the
+        # input was given as a relative or an absolute path.
+        output_path = input_path_and_file.with_suffix(".srt")
 
         if args.language is not None and args.language not in SUPPORTED_LANGUAGES:
             print("Please input a supported language code", file=sys.stderr)
             print(",".join(SUPPORTED_LANGUAGES), file=sys.stderr)
             return 1
 
-        if is_linux():
-            # The CUDA path ships cuBLAS/cuDNN as Windows-only wheels, so Linux would
-            # still need a manual CUDA setup. Reject it rather than half-support it.
-            print("Linux is not supported", file=sys.stderr)
-            return 1
+        progress = build_progress_printer()
 
         if is_apple():
             try:
@@ -56,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
                     language=args.language,
                     model=args.model,
                     translate=args.translate,
+                    on_progress=progress,
                 )
             except NotSupportedModelException as e:
                 print(f"{e}\n", file=sys.stderr)
@@ -71,6 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                     language=args.language,
                     translate=args.translate,
                     model=args.model,
+                    on_progress=progress,
                 )
             except NotSupportedModelException as e:
                 print(f"{e}\n", file=sys.stderr)
@@ -83,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
 
-        write_to(f".{path}/{filename.split('.')[0]}.srt", texts, srt=True)
+        write_to(output_path, texts, srt=True)
         print("Done!")
         return 0
 
