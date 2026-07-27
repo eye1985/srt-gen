@@ -57,12 +57,25 @@ as a desktop window — see [UI mode](#ui-mode) below.
 | `--model` | no | `large-v3` | Model to transcribe with, see [Models](#models) |
 | `--language` | no | auto-detect | ISO 639-1 code of the spoken media, see [Languages](#languages) |
 | `--translate` | no | off | Output English subtitles instead of the spoken language, see [Translation](#translation) |
-| `--temperature` | no | `0.8` | Decoding temperature; `0.0` is greedy, see [Decoding](#decoding) |
+| `--temperature` | no | backend default | Decoding temperature; `0.0` is greedy, see [Decoding](#decoding) |
 | `--condition-on-previous-text` | no | off | Feed each segment the previous one as context, see [Decoding](#decoding) |
 | `--ui` | no | off | Open the desktop window instead of transcribing, see [UI mode](#ui-mode) |
 
 There is no `--output` flag. The `.srt` is written next to the input file,
 reusing its base name (`./videos/video01.mp4` → `./videos/video01.srt`).
+
+Every run opens by listing the settings it resolved, so you can see what the
+defaults turned into before the model starts loading:
+
+```
+Input:                      clip.mp4
+Output:                     clip.srt
+Model:                      large-v3 (default)
+Language:                   auto-detect
+Translate to English:       no
+Temperature:                backend default
+Condition on previous text: no
+```
 
 Omitting `--language` detects the language from the first 30 seconds, which can
 misfire on files that open with music, silence or another language.
@@ -82,7 +95,10 @@ is written next to the input exactly as on the command line.
 options in the window instead.
 
 The window exposes model, auto-detect language, language, temperature, condition
-on previous text, and translate. **It runs on Apple silicon only** — on
+on previous text, and translate. Temperature has its own **Auto temperature**
+box, ticked by default, which greys the number out and leaves the choice to the
+backend exactly as omitting `--temperature` does. **It runs on Apple silicon
+only** — on
 Windows + NVIDIA the window opens, but starting a transcription fails. Use the
 command line there.
 
@@ -93,6 +109,22 @@ greedy — it always takes the most likely token, which is the steadiest choice
 and the best one on Apple silicon, where there is no beam search to fall back
 on. Higher values let it consider less likely tokens, which sometimes recovers
 from a bad patch of audio and sometimes invents text that was never spoken.
+
+Leaving the flag out is not the same as passing a number, and the two backends
+fall back differently:
+
+- **Windows + NVIDIA** starts greedy and only raises the temperature for a
+  window that fails its own quality checks, stepping through `0.0, 0.2, 0.4,
+  0.6, 0.8, 1.0` until one passes. Naming a single value disables that ladder
+  and pins every window to it, so the flag is best left off unless one
+  particular file decodes badly.
+- **Apple silicon** decodes greedily at `0.0`, as mlx has no beam search to
+  fall back on.
+
+Segment timings on Windows + NVIDIA are aligned to the words actually heard,
+rather than to the timestamps the model predicts for itself. Those predictions
+drift, and in particular like to pull the first cue back to `00:00:00` on a file
+that opens with silence. Apple silicon already worked this way.
 
 `--condition-on-previous-text` feeds each segment the previous segment as
 context. It reads better on continuous speech, because the model keeps names and
@@ -222,7 +254,7 @@ Both `whisper_transcribe` (Apple silicon) and `faster_whisper_transcribe`
 (Windows + NVIDIA) take:
 
 ```python
-(file_path, language, model, translate=False, temperature=..., 
+(file_path, language, model, translate=False, temperature=None,
  condition_on_previous_text=False, on_progress=None)
 ```
 
@@ -230,10 +262,11 @@ Pass `language=None` to auto-detect, an empty `model` (`""`) to use the platform
 default, and `translate=True` to get English out. An unsupported `model` raises
 `NotSupportedModelException`.
 
-`temperature` defaults to `0.0` on `whisper_transcribe` (greedy — mlx has no
-beam search) and `0.8` on `faster_whisper_transcribe`. Note that the `srt-gen`
-command passes `0.8` to both, so calling the library directly on Apple silicon
-without an explicit `temperature` decodes differently than the CLI does.
+`temperature=None` means unset rather than zero, and each function resolves it
+the way the CLI does: `whisper_transcribe` decodes greedily at `0.0`, while
+`faster_whisper_transcribe` drops the argument altogether and lets
+faster-whisper apply its own fallback ladder. Passing a float pins the decode to
+that one value — see [Decoding](#decoding).
 
 `on_progress` is called with the fraction decoded so far, `0.0` → `1.0`.
 

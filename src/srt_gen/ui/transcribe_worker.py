@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from PySide6.QtCore import QObject, Signal
 
@@ -22,7 +23,7 @@ class TranscribeWorker(QObject):
         language: str,
         model: str,
         translate: bool,
-        temperature: float,
+        temperature: Optional[float],
         condition_on_previous_text: bool,
     ):
         super().__init__()

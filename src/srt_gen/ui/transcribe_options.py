@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
 )
 from PySide6.QtCore import Qt
+from typing import Optional
 
 
 from srt_gen.languages import SUPPORTED_LANGUAGES
@@ -18,7 +19,8 @@ class TranscribeOptions:
         self.__beam_size = 5
         self.__auto_detect_lang = True
         self.__language_code = "en"
-        self.__temperature = 0.8
+        self.__auto_temperature = True
+        self.__temperature = 0.0
         self.__condition_on_previous_text = False
         self.__translate = False
         self.__model = default_model_for_platform()
@@ -51,11 +53,16 @@ class TranscribeOptions:
         )
         self.language_combo_box.currentTextChanged.connect(self.select_language)
 
+        self.auto_temperature_checkbox = QCheckBox()
+        self.auto_temperature_checkbox.setChecked(self.__auto_temperature)
+        self.auto_temperature_checkbox.toggled.connect(self.set_auto_temperature)
+
         self.temp_box = QDoubleSpinBox()
         self.temp_box.setRange(0.0, 1.0)
         self.temp_box.setSingleStep(0.1)
         self.temp_box.setDecimals(2)
         self.temp_box.setValue(self.__temperature)
+        self.temp_box.setDisabled(self.__auto_temperature)
         self.temp_box.valueChanged.connect(self.select_temperature)
 
         self.condition_box = QCheckBox()
@@ -77,6 +84,7 @@ class TranscribeOptions:
             "Auto detect language:", self.auto_detect_lang_checkbox
         )
         self.__form_layout.addRow("Language:", self.language_combo_box)
+        self.__form_layout.addRow("Auto temperature:", self.auto_temperature_checkbox)
         self.__form_layout.addRow("Temperature:", self.temp_box)
         self.__form_layout.addRow("Condition on previous text:", self.condition_box)
         self.__form_layout.addRow("Translate to English:", self.translate_box)
@@ -93,6 +101,10 @@ class TranscribeOptions:
 
     def select_language(self, text):
         self.__language_code = text
+
+    def set_auto_temperature(self, checked):
+        self.__auto_temperature = checked
+        self.temp_box.setEnabled(not checked)
 
     def select_temperature(self, value):
         self.__temperature = value
@@ -124,8 +136,13 @@ class TranscribeOptions:
         return self.__language_code
 
     @property
-    def temperature(self):
-        return self.__temperature
+    def auto_temperature(self):
+        return self.__auto_temperature
+
+    @property
+    def temperature(self) -> Optional[float]:
+        # None lets the backend pick its own default.
+        return None if self.__auto_temperature else self.__temperature
 
     @property
     def condition_on_previous_text(self):

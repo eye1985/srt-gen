@@ -8,6 +8,9 @@ from typing import Callable, Optional, TypedDict
 from .utils import add_cuda_dll_dirs, to_hh_mm_ss_ms
 from .models import mlx_default_model, mlx_models, fw_default_model, fw_models
 
+# mlx has no beam search, so greedy is best quality there.
+MLX_DEFAULT_TEMPERATURE = 0.0
+
 WhisperResult = TypedDict(
     "WhisperResult",
     {
@@ -79,11 +82,14 @@ def whisper_transcribe(
     language,
     model: str,
     translate: bool = False,
-    # Greedy decoding; mlx has no beam search, so 0 is best quality.
-    temperature: float = 0.0,
+    # None means "unset", not 0.0: see MLX_DEFAULT_TEMPERATURE.
+    temperature: Optional[float] = None,
     condition_on_previous_text: bool = False,
     on_progress: Optional[ProgressCallback] = None,
 ) -> list[WhisperResult]:
+    if temperature is None:
+        temperature = MLX_DEFAULT_TEMPERATURE
+
     model = model or mlx_default_model
     if model not in mlx_models:
         raise NotSupportedModelException(NOT_SUPPORTED_MODEL_MESSAGE)
@@ -134,7 +140,8 @@ def faster_whisper_transcribe(
     language,
     model: str,
     translate: bool = False,
-    temperature: float = 0.8,  # Default is 0.6
+    # None means "unset", not 0.0: the argument is then left out of the call below.
+    temperature: Optional[float] = None,
     condition_on_previous_text: bool = False,
     on_progress: Optional[ProgressCallback] = None,
 ) -> list[WhisperResult]:
@@ -149,13 +156,23 @@ def faster_whisper_transcribe(
     add_cuda_dll_dirs()
     model = WhisperModel(model, device="cuda", compute_type="float16")
 
+    # Left out entirely when unset, so faster-whisper applies its own default
+    # (greedy first, stepping up only on a failed window) instead of us restating
+    # it here and going stale if it ever changes.
+    temperature_option = {} if temperature is None else {"temperature": temperature}
+
     segments, info = model.transcribe(
         file_path,
         beam_size=5,
         language=language,
-        temperature=temperature,
         condition_on_previous_text=condition_on_previous_text,
         task=task,
+        # Aligns segment bounds to actual word onsets via cross-attention DTW.
+        # Without it the bounds are the model's predicted timestamp tokens, which
+        # drift and like to snap the first segment back to 00:00.
+        word_timestamps=True,
+        **temperature_option,
+
         ## Keep this for future use
         # vad_filter=True,
         # vad_parameters=dict(

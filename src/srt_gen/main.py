@@ -8,7 +8,7 @@ from .whisper import (
     faster_whisper_transcribe,
     NotSupportedModelException,
 )
-from .models import mlx_models, fw_models
+from .models import mlx_models, fw_models, default_model_for_platform
 from .writer import write_to
 from .languages import SUPPORTED_LANGUAGES
 from .cli import build_parser
@@ -34,6 +34,37 @@ def build_progress_printer():
             print(f"[{percent:3d}%]", file=sys.stderr, flush=True)
 
     return report
+
+
+def print_settings(args, output_path: Path) -> None:
+    """Echo what the run will actually use, with the defaults already filled in.
+
+    Listing the raw flags back would hide the interesting half: most of them are
+    optional, and what a run ends up doing is mostly decided by what they fall back
+    to. Anything resolved further down, inside the backend, is labelled as such
+    rather than second-guessed here.
+    """
+    settings = [
+        ("Input", args.input),
+        ("Output", str(output_path)),
+        ("Model", args.model or "%s (default)" % default_model_for_platform()),
+        ("Language", args.language or "auto-detect"),
+        ("Translate to English", "yes" if args.translate else "no"),
+        # Each backend has its own, so there is no single value to name here.
+        (
+            "Temperature",
+            "backend default" if args.temperature is None else str(args.temperature),
+        ),
+        (
+            "Condition on previous text",
+            "yes" if args.condition_on_previous_text else "no",
+        ),
+    ]
+
+    width = max(len(label) for label, _ in settings) + 1
+    for label, value in settings:
+        print("%-*s %s" % (width, label + ":", value))
+    print()
 
 
 # Returns a shell exit code: 0 = success, non-zero = failure. Without this,
@@ -68,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Please input a supported language code", file=sys.stderr)
             print(",".join(SUPPORTED_LANGUAGES), file=sys.stderr)
             return 1
+
+        print_settings(args, output_path)
 
         progress = build_progress_printer()
 

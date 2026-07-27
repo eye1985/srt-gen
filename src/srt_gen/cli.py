@@ -12,8 +12,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--translate", action="store_true", help="Translate text to english"
     )
+    # No default: unset lets each backend use its own, rather than pinning every
+    # decode to one fixed temperature.
     parser.add_argument(
-        "--temperature", type=float, default=0.8, help="eg. 0.8 (0.0 is greedy)"
+        "--temperature",
+        type=float,
+        default=None,
+        help="eg. 0.8 (0.0 is greedy). Omit to use the backend default",
     )
     parser.add_argument(
         "--condition-on-previous-text",
