@@ -13,13 +13,21 @@ class TranscribeWorker(QObject):
     failed = Signal(str)
     finished = Signal()
 
-    def __init__(self, input_path: str, language: str, model: str, translate: bool):
+    def __init__(
+        self,
+        input_path: str,
+        auto_detect_lang: bool,
+        language: str,
+        model: str,
+        translate: bool,
+    ):
         super().__init__()
         self.__last_percent = -1
         self.__input_path = input_path
         self.__language = language
         self.__model = model
         self.__translate = translate
+        self.__auto_detect_lang = auto_detect_lang
 
     def emit_progress(self, fraction: float):
         """Turn a 0.0-1.0 decode fraction into a percentage signal.
@@ -54,7 +62,8 @@ class TranscribeWorker(QObject):
 
             texts = whisper_transcribe(
                 file_path=self.__input_path,
-                language=self.__language,
+                # None lets whisper detect the language itself
+                language=None if self.__auto_detect_lang else self.__language,
                 model=self.__model,
                 translate=self.__translate,
                 on_progress=self.emit_progress,

@@ -10,11 +10,13 @@ from PySide6.QtCore import Qt
 
 from srt_gen.languages import SUPPORTED_LANGUAGES
 from srt_gen.models import default_model_for_platform, models_for_platform
+from srt_gen.utils import is_apple
 
 
 class TranscribeOptions:
     def __init__(self):
         self.__beam_size = 5
+        self.__auto_detect_lang = True
         self.__language_code = "en"
         self.__temperature = 0.8
         self.__condition_on_previous_text = False
@@ -35,7 +37,12 @@ class TranscribeOptions:
         self.beam_size_box.setValue(self.__beam_size)
         self.beam_size_box.valueChanged.connect(self.select_beam_size)
 
+        self.auto_detect_lang_checkbox = QCheckBox()
+        self.auto_detect_lang_checkbox.setChecked(self.__auto_detect_lang)
+        self.auto_detect_lang_checkbox.toggled.connect(self.set_auto_detect_lang)
+
         self.language_combo_box = QComboBox()
+        self.language_combo_box.setDisabled(True)
 
         sorted_langs: list[str] = sorted(SUPPORTED_LANGUAGES)
         self.language_combo_box.addItems(sorted_langs)
@@ -62,7 +69,12 @@ class TranscribeOptions:
         self.__form_layout = QFormLayout()
         self.__form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
         self.__form_layout.addRow("Model:", self.model_combo_box)
-        self.__form_layout.addRow("Beam Size:", self.beam_size_box)
+        # mlx has no beam search, so the option is meaningless on Apple Silicon.
+        if not is_apple():
+            self.__form_layout.addRow("Beam Size:", self.beam_size_box)
+        self.__form_layout.addRow(
+            "Auto detect language:", self.auto_detect_lang_checkbox
+        )
         self.__form_layout.addRow("Language:", self.language_combo_box)
         self.__form_layout.addRow("Temperature:", self.temp_box)
         self.__form_layout.addRow("Condition on previous text:", self.condition_box)
@@ -73,6 +85,10 @@ class TranscribeOptions:
 
     def select_beam_size(self, value):
         self.__beam_size = value
+
+    def set_auto_detect_lang(self, checked):
+        self.__auto_detect_lang = checked
+        self.language_combo_box.setEnabled(not checked)
 
     def select_language(self, text):
         self.__language_code = text
@@ -97,6 +113,10 @@ class TranscribeOptions:
     @property
     def beam_size(self):
         return self.__beam_size
+
+    @property
+    def auto_detect_lang(self):
+        return self.__auto_detect_lang
 
     @property
     def language_code(self):

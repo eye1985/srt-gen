@@ -70,16 +70,6 @@ class MainWindow(QMainWindow):
             print("Cancelled")
 
     def run_transcribe(self):
-
-        print(self.options.model)
-        print(self.options.beam_size)
-        print(self.options.language_code)
-        print(self.options.condition_on_previous_text)
-        print(self.options.temperature)
-        print(self.options.translate)
-
-        print("Transcribing ...")
-
         self.run_button.setEnabled(False)
         self.button.setEnabled(False)
         self.progress_bar.setValue(0)
@@ -87,6 +77,7 @@ class MainWindow(QMainWindow):
         self.thread = QThread()
         self.worker = TranscribeWorker(
             input_path=self.path,
+            auto_detect_lang=self.options.auto_detect_lang,
             language=self.options.language_code,
             model=self.options.model,
             translate=self.options.translate,
