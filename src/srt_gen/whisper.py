@@ -79,6 +79,9 @@ def whisper_transcribe(
     language,
     model: str,
     translate: bool = False,
+    # Greedy decoding; mlx has no beam search, so 0 is best quality.
+    temperature: float = 0.0,
+    condition_on_previous_text: bool = False,
     on_progress: Optional[ProgressCallback] = None,
 ) -> list[WhisperResult]:
     model = model or mlx_default_model
@@ -106,8 +109,8 @@ def whisper_transcribe(
             word_timestamps=True,
             language=language,
             task=task,
-            temperature=0.0,  # greedy; mlx has no beam search, so 0 is best quality
-            condition_on_previous_text=False,
+            temperature=temperature,
+            condition_on_previous_text=condition_on_previous_text,
             verbose=True,  # print each segment as it's decoded (True) / progress bar (False)
         )
 
@@ -131,6 +134,8 @@ def faster_whisper_transcribe(
     language,
     model: str,
     translate: bool = False,
+    temperature: float = 0.8,  # Default is 0.6
+    condition_on_previous_text: bool = False,
     on_progress: Optional[ProgressCallback] = None,
 ) -> list[WhisperResult]:
 
@@ -148,8 +153,8 @@ def faster_whisper_transcribe(
         file_path,
         beam_size=5,
         language=language,
-        temperature=0.8,  # Default is 0.6
-        condition_on_previous_text=False,
+        temperature=temperature,
+        condition_on_previous_text=condition_on_previous_text,
         task=task,
         ## Keep this for future use
         # vad_filter=True,

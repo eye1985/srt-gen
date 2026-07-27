@@ -136,6 +136,8 @@ class MainWindow(QMainWindow):
             language=self.options.language_code,
             model=self.options.model,
             translate=self.options.translate,
+            temperature=self.options.temperature,
+            condition_on_previous_text=self.options.condition_on_previous_text,
         )
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run_task)

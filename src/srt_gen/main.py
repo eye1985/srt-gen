@@ -78,6 +78,8 @@ def main(argv: list[str] | None = None) -> int:
                     language=args.language,
                     model=args.model,
                     translate=args.translate,
+                    temperature=args.temperature,
+                    condition_on_previous_text=args.condition_on_previous_text,
                     on_progress=progress,
                 )
             except NotSupportedModelException as e:
@@ -94,6 +96,8 @@ def main(argv: list[str] | None = None) -> int:
                     language=args.language,
                     translate=args.translate,
                     model=args.model,
+                    temperature=args.temperature,
+                    condition_on_previous_text=args.condition_on_previous_text,
                     on_progress=progress,
                 )
             except NotSupportedModelException as e:

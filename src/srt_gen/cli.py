@@ -12,5 +12,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--translate", action="store_true", help="Translate text to english"
     )
+    parser.add_argument(
+        "--temperature", type=float, default=0.8, help="eg. 0.8 (0.0 is greedy)"
+    )
+    parser.add_argument(
+        "--condition-on-previous-text",
+        action="store_true",
+        help="Feed each segment the previous one as context",
+    )
     parser.add_argument("--ui", action="store_true", help="Use UI")
     return parser

@@ -22,6 +22,8 @@ class TranscribeWorker(QObject):
         language: str,
         model: str,
         translate: bool,
+        temperature: float,
+        condition_on_previous_text: bool,
     ):
         super().__init__()
         self.__last_percent = -1
@@ -30,6 +32,8 @@ class TranscribeWorker(QObject):
         self.__model = model
         self.__translate = translate
         self.__auto_detect_lang = auto_detect_lang
+        self.__temperature = temperature
+        self.__condition_on_previous_text = condition_on_previous_text
 
     def emit_progress(self, fraction: float):
         """Turn a 0.0-1.0 decode fraction into a percentage signal.
@@ -76,6 +80,8 @@ class TranscribeWorker(QObject):
                     language=None if self.__auto_detect_lang else self.__language,
                     model=self.__model,
                     translate=self.__translate,
+                    temperature=self.__temperature,
+                    condition_on_previous_text=self.__condition_on_previous_text,
                     on_progress=self.emit_progress,
                 )
                 write_to(output_path, texts, srt=True)
