@@ -17,6 +17,7 @@ dependencies = [
     # support (Linux is rejected in main); no-op on Apple silicon.
     "nvidia-cublas-cu12 ; platform_system == 'Windows' and platform_machine == 'AMD64'",
     "nvidia-cudnn-cu12>=9,<10 ; platform_system == 'Windows' and platform_machine == 'AMD64'",
+    "pyside6>=6.11.1",
 ]
 
 [project.scripts]
