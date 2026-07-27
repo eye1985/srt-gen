@@ -2,6 +2,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 
+from srt_gen.ui.log_stream import capture_output
 from srt_gen.utils import is_apple
 from srt_gen.models import mlx_models
 from srt_gen.whisper import whisper_transcribe, NotSupportedModelException
@@ -10,6 +11,7 @@ from srt_gen.writer import write_to
 
 class TranscribeWorker(QObject):
     progress = Signal(int)
+    log = Signal(str)
     failed = Signal(str)
     finished = Signal()
 
@@ -54,28 +56,40 @@ class TranscribeWorker(QObject):
         # us an absolute path, so this has to stay absolute too.
         output_path = Path(self.__input_path).with_suffix(".srt")
 
-        try:
-            if not is_apple():
-                raise NotImplementedError(
-                    "Only Apple Silicon is supported from the UI for now."
-                )
+        # Everything printed in here, by us or by the backend, ends up in the log
+        # panel as well as on the terminal.
+        with capture_output(self.log.emit):
+            try:
+                print("Starting transcribe: %s" % self.__input_path)
+                print("Model: %s" % self.__model)
+                if self.__translate:
+                    print("Translating to English")
 
-            texts = whisper_transcribe(
-                file_path=self.__input_path,
-                # None lets whisper detect the language itself
-                language=None if self.__auto_detect_lang else self.__language,
-                model=self.__model,
-                translate=self.__translate,
-                on_progress=self.emit_progress,
-            )
-            write_to(output_path, texts, srt=True)
-            self.emit_progress(1.0)
-        except NotSupportedModelException as e:
-            self.failed.emit("%s\n\n%s" % (e, "\n".join(mlx_models)))
-        except Exception as e:
-            # Anything escaping here would otherwise die silently in the worker
-            # thread, leaving the UI stuck on a half-filled progress bar.
-            self.failed.emit(str(e))
-        finally:
-            # Always emitted, so the thread quits even after a failure.
-            self.finished.emit()
+                if not is_apple():
+                    raise NotImplementedError(
+                        "Only Apple Silicon is supported from the UI for now."
+                    )
+
+                texts = whisper_transcribe(
+                    file_path=self.__input_path,
+                    # None lets whisper detect the language itself
+                    language=None if self.__auto_detect_lang else self.__language,
+                    model=self.__model,
+                    translate=self.__translate,
+                    on_progress=self.emit_progress,
+                )
+                write_to(output_path, texts, srt=True)
+                print("Wrote %s" % output_path)
+                self.emit_progress(1.0)
+            except NotSupportedModelException as e:
+                print("Failed: %s" % e)
+                self.failed.emit("%s\n\n%s" % (e, "\n".join(mlx_models)))
+            except Exception as e:
+                # Anything escaping here would otherwise die silently in the worker
+                # thread, leaving the UI stuck on a half-filled progress bar. The log
+                # keeps a copy, since the dialog is gone as soon as it's dismissed.
+                print("Failed: %s" % e)
+                self.failed.emit(str(e))
+            finally:
+                # Always emitted, so the thread quits even after a failure.
+                self.finished.emit()

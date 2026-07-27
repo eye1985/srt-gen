@@ -67,6 +67,7 @@ class TranscribeOptions:
         self.translate_box.toggled.connect(self.select_translate)
 
         self.__form_layout = QFormLayout()
+        self.__form_layout.setContentsMargins(0, 0, 0, 0)
         self.__form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignLeft)
         self.__form_layout.addRow("Model:", self.model_combo_box)
         # mlx has no beam search, so the option is meaningless on Apple Silicon.
